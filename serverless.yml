@@ -1,0 +1,64 @@
+service: benefits-backend
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: prod
+  # Las variables de entorno se manejan en la consola de AWS para mayor seguridad
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource:
+            - "arn:aws:logs:*:*:*"
+
+package:
+  patterns:
+    - '!**'
+    - '.build/lambda/**'
+    - 'package.json'
+    - 'node_modules/**'
+
+functions:
+  benefits:
+    handler: .build/lambda/benefits.benefits
+    events:
+      - http:
+          path: benefits
+          method: get
+          cors: true
+    timeout: 30
+    memorySize: 256
+    # Las variables de entorno específicas para esta función
+    # Se deben configurar en la consola de AWS
+    vpc:
+      # Mantener la VPC existente para esta función
+
+  search:
+    handler: .build/lambda/search.search
+    events:
+      - http:
+          path: search
+          method: post
+          cors: true
+    timeout: 30
+    memorySize: 256
+    # La función search no necesita acceso a la base de datos
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 4000 
