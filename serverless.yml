@@ -5,7 +5,39 @@ provider:
   runtime: nodejs18.x
   region: us-east-1
   stage: prod
-  # Las variables de entorno se manejan en la consola de AWS para mayor seguridad
+  
+  # Variables de entorno globales (referenciadas desde env.example)
+  environment:
+    # Configuración de Base de Datos
+    DB_HOST: ${env:DB_HOST}
+    DB_PORT: ${env:DB_PORT}
+    DB_NAME: ${env:DB_NAME}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    VPC_ID: ${env:VPC_ID}
+    SECURITY_GROUP_ID: ${env:SECURITY_GROUP_ID}
+    SUBNET_ID_1: ${env:SUBNET_ID_1}
+    SUBNET_ID_2: ${env:SUBNET_ID_2}
+    
+    # Configuración de Google Sheets (opcional)
+    GOOGLE_SHEETS_URL: ${env:GOOGLE_SHEETS_URL}
+    
+    # Configuración de N8N para búsqueda AI
+    N8N_WEBHOOK_URL: ${env:N8N_WEBHOOK_URL}
+    
+    # Configuración de Google Service Account (para autenticación con Google Sheets)
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: ${env:GOOGLE_SERVICE_ACCOUNT_EMAIL}
+    GOOGLE_PRIVATE_KEY: ${env:GOOGLE_PRIVATE_KEY}
+  
+  # Configuración de VPC
+  vpc:
+    securityGroupIds:
+      - sg-099b05b9f2e387a9a
+    subnetIds:
+      - subnet-0cc0bd580333c31b7
+      - subnet-0ac966e31e4a7525b
+  
+  # Permisos IAM
   iam:
     role:
       statements:
@@ -26,13 +58,16 @@ provider:
 package:
   patterns:
     - '!**'
-    - '.build/lambda/**'
+    - 'benefits.js'
+    - 'search.js'
+    - 'db.js'
+    - 'response.js'
     - 'package.json'
     - 'node_modules/**'
 
 functions:
   benefits:
-    handler: .build/lambda/benefits.benefits
+    handler: benefits.handler
     events:
       - http:
           path: benefits
@@ -40,13 +75,10 @@ functions:
           cors: true
     timeout: 30
     memorySize: 256
-    # Las variables de entorno específicas para esta función
-    # Se deben configurar en la consola de AWS
-    vpc:
-      # Mantener la VPC existente para esta función
+    description: "API para obtener beneficios desde base de datos o Google Sheets"
 
   search:
-    handler: .build/lambda/search.search
+    handler: search.handler
     events:
       - http:
           path: search
@@ -54,9 +86,10 @@ functions:
           cors: true
     timeout: 30
     memorySize: 256
-    # La función search no necesita acceso a la base de datos
+    description: "API de búsqueda AI que consulta benefits y procesa con N8N"
 
 plugins:
+  - serverless-dotenv-plugin
   - serverless-offline
 
 custom:
